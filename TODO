@@ -1,0 +1,3 @@
+create tests for sudokus of different difficulty
+read sudokus from cvs files, add argparser
+show full sudoku state as optional output
