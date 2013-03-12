@@ -31,7 +31,7 @@ def vstack(*lists):
     # check if all lists have the same length
     lengths = set()
     for item in lists:
-        lengths.add(len(lists))
+        lengths.add(len(item))
     if len(lengths) > 1:
         raise ValueError("lists have different lengths")
 
@@ -64,7 +64,7 @@ class SudokuNumber(object):
             self.solution = None
             self.marked = numpy.zeros(9, dtype=bool)
 
-    def mark(self, number)
+    def mark(self, number):
         """mark(number)
 
         Marks number as not available as solution.
@@ -76,16 +76,17 @@ class SudokuNumber(object):
 
         Returns
         -------
-        out: None / int
-            Returns an int if solution is found, None otherwise.
+        out: bool
+            Returns if a solution was found.
 
         """
         marked = self.marked
-        marked[number - 1] = True
-        if marked.sum() == 8:
-            self.solution = numpy.where(marked == False) + 1
-            return self.solution
-        return None
+        if self.solution is None:
+            marked[number - 1] = True
+            if marked.sum() == 8:
+                self.solution = numpy.where(marked == False)[0][0] + 1
+                return True
+            return False
 
 
 class SudokuField(object):
@@ -107,6 +108,7 @@ class SudokuField(object):
         self.field = numpy.ndarray((9,9), dtype=object)
         vSudokuNumber = numpy.vectorize(SudokuNumber)
         self.field[:,:] = vSudokuNumber(field)
+        self.show()
 
     def show(self, full=False):
         """show()
@@ -121,7 +123,11 @@ class SudokuField(object):
             for idx in range(9):
                 field.append([])
                 for idy in range(9):
-                    field[idx].append(self.field[idx, idy].solution)
+                    entry = self.field[idx, idy].solution
+                    if entry is None:
+                        entry = 0
+                    field[idx].append(entry)
+            print field
 
     def solve(self):
         """solve()
@@ -141,37 +147,41 @@ class SudokuField(object):
             cur_row = coords[0]
             cur_col = coords[1]
             solution = self.field[cur_row, cur_col].solution
-            print "marking number", solution, "from" cur_row + 1, cur_col + 1
+            print "marking number", solution, "from", cur_row,
+            print cur_col
             # mark within row
             cols = range(9)
             cols.pop(cur_col)
             for col in cols:
                 res = self.field[cur_row, col].mark(solution)
                 if res:
-                    coords.append([cur_row, col])
+                    coord_list.append([cur_row, col])
+                    print "adding", cur_row, col
             # mark within column
             rows = range(9)
             rows.pop(cur_row)
             for row in rows:
                 res = self.field[row, cur_col].mark(solution)
                 if res:
-                    coords.append([row, cur_col])
+                    coord_list.append([row, cur_col])
+                    print "adding", row, cur_col
             # mark within rest of sector (4 coords)
             cur_secnr_row = cur_row / 3
             cur_secnr_col = cur_col / 3
             cur_insec_row = cur_row % 3
             cur_insec_col = cur_col % 3
             insec_rows = range(3)
-            insec_rows.pop(insec_row)
+            insec_rows.pop(cur_insec_row)
             insec_cols = range(3)
-            insec_cols.pop(insec_col)
+            insec_cols.pop(cur_insec_col)
             for insec_row in insec_rows:
                 row = cur_secnr_row * 3 + insec_row
                 for insec_col in insec_cols:
                     col = cur_secnr_col * 3 + insec_col
                     res = self.field[row, col].mark(solution)
                     if res:
-                        coords.append([row, col])
+                        coord_list.append([row, col])
+                        print "adding", row, col
 
         # show solution
         self.show()
@@ -179,14 +189,14 @@ class SudokuField(object):
 
 if __name__ == "__main__":
     field = [[0,0,0,9,0,0,7,0,0],
-            [5,4,0,0,0,0,0,6,3],
-            [0,0,1,6,3,2,0,0,0],
-            [1,0,0,0,6,8,2,0,9],
-            [9,2,0,0,0,0,0,8,1],
-            [4,0,8,2,1,0,0,0,5],
-            [0,0,0,3,7,1,4,0,0],
-            [3,1,0,0,0,0,0,9,7],
-            [0,0,6,0,0,4,0,0,0]]
+             [5,4,0,0,0,0,0,6,3],
+             [0,0,1,6,3,2,0,0,0],
+             [1,0,0,0,6,8,2,0,9],
+             [9,2,0,0,0,0,0,8,1],
+             [4,0,8,2,1,0,0,0,5],
+             [0,0,0,3,7,1,4,0,0],
+             [3,1,0,0,0,0,0,9,7],
+             [0,0,6,0,0,4,0,0,0]]
     myField = SudokuField(field)
     myField.show()
     myField.solve()
