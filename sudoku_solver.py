@@ -92,11 +92,11 @@ class SudokuNumber(object):
 class SudokuField(object):
     """Represents the full 9x9 sudoku field."""
     def __init__(self, init_field):
-        """SudokuField(field)
+        """SudokuField(init_field)
 
         Parameters
         ----------
-        field: list of lists or 2d numpy array, of ints
+        init_field: list of lists or 2d numpy array, of ints
             Holds sudoku numbers or 0 (empty).
 
         Methods
@@ -105,15 +105,15 @@ class SudokuField(object):
             Solves the sudoku and returns the solution.
         """
         self.init_field = numpy.array(init_field, dtype=int)
-        self.field = numpy.ndarray((9,9), dtype=object)
-        vSudokuNumber = numpy.vectorize(SudokuNumber)
-        self.field[:,:] = vSudokuNumber(field)
+        self.field = numpy.ndarray((9, 9), dtype=object)
+        vec_sudoku_number = numpy.vectorize(SudokuNumber)
+        self.field[:, :] = vec_sudoku_number(init_field)
         self.show()
 
     def show(self, full=False):
         """show()
 
-        Shows the current state of the sudoku. 
+        Shows the current state of the sudoku.
 
         """
         if full:
@@ -188,16 +188,16 @@ class SudokuField(object):
 
 
 if __name__ == "__main__":
-    field = [[0,0,0,9,0,0,7,0,0],
-             [5,4,0,0,0,0,0,6,3],
-             [0,0,1,6,3,2,0,0,0],
-             [1,0,0,0,6,8,2,0,9],
-             [9,2,0,0,0,0,0,8,1],
-             [4,0,8,2,1,0,0,0,5],
-             [0,0,0,3,7,1,4,0,0],
-             [3,1,0,0,0,0,0,9,7],
-             [0,0,6,0,0,4,0,0,0]]
-    myField = SudokuField(field)
-    myField.show()
-    myField.solve()
-    
+    # example field
+    FIELD = [[0, 0, 0, 9, 0, 0, 7, 0, 0],
+             [5, 4, 0, 0, 0, 0, 0, 6, 3],
+             [0, 0, 1, 6, 3, 2, 0, 0, 0],
+             [1, 0, 0, 0, 6, 8, 2, 0, 9],
+             [9, 2, 0, 0, 0, 0, 0, 8, 1],
+             [4, 0, 8, 2, 1, 0, 0, 0, 5],
+             [0, 0, 0, 3, 7, 1, 4, 0, 0],
+             [3, 1, 0, 0, 0, 0, 0, 9, 7],
+             [0, 0, 6, 0, 0, 4, 0, 0, 0]]
+    SUDOKU = SudokuField(FIELD)
+    SUDOKU.show()
+    SUDOKU.solve()
