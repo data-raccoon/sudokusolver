@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""sudoku_solver.py
+"""sudokusolver.py
 
 Solves easy sudoku.
 
@@ -11,13 +11,14 @@ __status__ = "Development"
 
 import argparse
 import numpy
+import pprint
 
 
 def vstack(*lists):
     """ vstack(*lists)
 
-    Returns a list of lists, stacking vertically the input lists. Make sure all
-    input lists have the same lengths.
+    Returns a list of lists, stacking vertically the input lists. Make sure
+    all input lists have the same lengths.
 
     Parameters
     ----------
@@ -51,23 +52,78 @@ def vstack(*lists):
     return res
 
 
+def check(solution, org_field=None):
+    """check(solution, org_field=None):
+
+    Checks if solution indeed is a solved sudoku. If org_field is given,
+    additionally checks if no alterations were made.
+
+    Parameters
+    ----------
+    solution: list of lists or 2d numpy array, of ints / SudokuField
+        Assumed solution of a sudoku / of the sudoku org_field.
+    org_field: optional, list of lists or 2d numpy array, of ints
+        Original sudoku which should be solved by solution. Defaults to None.
+
+    Returns
+    -------
+    out: bool
+        If solution is indeed a sudoku solution or the sudoku solution to
+        org_field.
+    """
+    if not type(solution) == numpy.ndarray:
+        solution = numpy.array(solution, dtype=int)
+
+    ref = numpy.arange(1,10)
+    # check rows
+    for row in solution:
+        row = numpy.copy(row)
+        row.sort()
+        if not (row == ref).all():
+            return False
+    # check cols
+    for col in solution.transpose():
+        col = numpy.copy(col)
+        col.sort()
+        if not (col == ref).all():
+            return False
+    # check sectors
+    for idx in range(3):
+        for idy in range(3):
+            sec = solution[0 + idx * 3:3 + idx * 3,
+                0 + idy * 3:3 + idy * 3].flatten()
+            sec.sort()
+            if not (sec == ref).all():
+                return False
+
+    # check original
+    if not org_field is None:
+        if not type(org_field) == numpy.ndarray:
+            org_field = numpy.array(org_field, dtype=int)
+        coords = numpy.where(org_field != 0)
+        if not (org_field[coords] == solution[coords]).all():
+            return False
+
+    return True
+
 class SudokuNumber(object):
     """Represents one number in sudoku. Holds all additional info."""
     def __init__(self, number):
         """SudokuNumber()
+
         """
+        self.solution = number
         if number != 0:  # init as filled
-            self.solution = number
-            self.marked = numpy.ones(9, dtype=bool)
-            self.marked[number - 1] = False
+            self.mask = numpy.zeros(9, dtype=bool)
+            self.mask[number - 1] = True
         else:  # init as blank
-            self.solution = None
-            self.marked = numpy.zeros(9, dtype=bool)
+            self.mask = numpy.ones(9, dtype=bool)
 
     def mark(self, number):
         """mark(number)
 
-        Marks number as not available as solution.
+        Marks number as not available as solution and returns if that led to
+        finding a solution (all but one number marked).
 
         Parameters
         ----------
@@ -80,11 +136,11 @@ class SudokuNumber(object):
             Returns if a solution was found.
 
         """
-        marked = self.marked
-        if self.solution is None:
-            marked[number - 1] = True
-            if marked.sum() == 8:
-                self.solution = numpy.where(marked == False)[0][0] + 1
+        mask = self.mask
+        if self.solution == 0:
+            mask[number - 1] = False
+            if mask.sum() == 1:
+                self.solution = numpy.where(mask == True)[0][0] + 1
                 return True
             return False
 
@@ -108,7 +164,27 @@ class SudokuField(object):
         self.field = numpy.ndarray((9, 9), dtype=object)
         vec_sudoku_number = numpy.vectorize(SudokuNumber)
         self.field[:, :] = vec_sudoku_number(init_field)
-        self.show()
+
+    def get_current_field(self):
+        """get_current_field()"""
+        field = []
+        for idx in range(9):
+            part = []
+            for idy in range(9):
+                entry = self.field[idx, idy].solution
+                part.append(entry)
+            field.append(part)
+        return field
+
+    def get_current_state(self):
+        """get_current_state()"""
+        # TODO yet to write
+        pass
+
+    def __repr__(self):
+        """String representation of SudokuField."""
+        # TODO change to current_state
+        return self.get_current_field().__repr__()
 
     def show(self, full=False):
         """show()
@@ -117,17 +193,11 @@ class SudokuField(object):
 
         """
         if full:
+            # TODO current_state
             pass
         else:
-            field = []
-            for idx in range(9):
-                field.append([])
-                for idy in range(9):
-                    entry = self.field[idx, idy].solution
-                    if entry is None:
-                        entry = 0
-                    field[idx].append(entry)
-            print field
+            pp = pprint.PrettyPrinter()
+            pp.pprint(self.get_current_field())
 
     def solve(self):
         """solve()
@@ -142,13 +212,13 @@ class SudokuField(object):
 
         # attention: the following list is being extended during runtime
         for coords in coord_list:
+            # TODO build up coords to check first, then do one loop
+
             # the number at coords may not occur at the same column, row or
             # sector. mark all those.
             cur_row = coords[0]
             cur_col = coords[1]
             solution = self.field[cur_row, cur_col].solution
-            print "marking number", solution, "from", cur_row,
-            print cur_col
             # mark within row
             cols = range(9)
             cols.pop(cur_col)
@@ -156,7 +226,6 @@ class SudokuField(object):
                 res = self.field[cur_row, col].mark(solution)
                 if res:
                     coord_list.append([cur_row, col])
-                    print "adding", cur_row, col
             # mark within column
             rows = range(9)
             rows.pop(cur_row)
@@ -164,7 +233,6 @@ class SudokuField(object):
                 res = self.field[row, cur_col].mark(solution)
                 if res:
                     coord_list.append([row, cur_col])
-                    print "adding", row, cur_col
             # mark within rest of sector (4 coords)
             cur_secnr_row = cur_row / 3
             cur_secnr_col = cur_col / 3
@@ -181,10 +249,8 @@ class SudokuField(object):
                     res = self.field[row, col].mark(solution)
                     if res:
                         coord_list.append([row, col])
-                        print "adding", row, col
 
-        # show solution
-        self.show()
+        return self.get_current_field()
 
 
 if __name__ == "__main__":
