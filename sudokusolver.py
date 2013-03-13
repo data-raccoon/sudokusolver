@@ -68,8 +68,7 @@ def check(solution, org_field=None):
     Returns
     -------
     out: bool
-        If solution is indeed a sudoku solution or the sudoku solution to
-        org_field.
+        If solution is indeed a sudoku solution or the solution to org_field.
     """
     if not type(solution) == numpy.ndarray:
         solution = numpy.array(solution, dtype=int)
@@ -202,7 +201,7 @@ class SudokuField(object):
     def solve(self):
         """solve()
 
-        Solves the sudoku and shows the solution.
+        Solves the sudoku and returns the solution.
 
         """
         coordxy = numpy.where(self.init_field != 0)
